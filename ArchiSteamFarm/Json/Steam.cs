@@ -338,6 +338,7 @@ namespace ArchiSteamFarm.Json {
 				Generic,
 				Trade,
 				Market,
+
 				// We're missing information about definition of number 4 type
 				ChangePhoneNumber = 5
 			}
@@ -353,7 +354,7 @@ namespace ArchiSteamFarm.Json {
 		}
 
 		[SuppressMessage("ReSharper", "ClassCannotBeInstantiated")]
-		internal sealed class InventoryResponse : NonZeroResponse {
+		internal sealed class InventoryResponse : NumberResponse {
 			[JsonProperty(PropertyName = "assets", Required = Required.DisallowNull)]
 			internal readonly HashSet<Asset> Assets;
 
@@ -444,7 +445,7 @@ namespace ArchiSteamFarm.Json {
 		}
 
 		[SuppressMessage("ReSharper", "ClassCannotBeInstantiated")]
-		internal class NonZeroResponse {
+		internal class NumberResponse {
 			internal bool Success { get; private set; }
 
 			[JsonProperty(PropertyName = "success", Required = Required.Always)]
@@ -465,32 +466,7 @@ namespace ArchiSteamFarm.Json {
 			}
 
 			// Deserialized from JSON
-			protected NonZeroResponse() { }
-		}
-
-		[SuppressMessage("ReSharper", "ClassCannotBeInstantiated")]
-		internal sealed class PrivacyResponse {
-			[JsonProperty(PropertyName = "PrivacySettings", Required = Required.Always)]
-			internal readonly PrivacySettings Settings;
-
-			// Deserialized from JSON
-			private PrivacyResponse() { }
-
-			internal sealed class PrivacySettings {
-				[JsonProperty(PropertyName = "PrivacyInventory", Required = Required.Always)]
-				internal readonly EPrivacySetting Inventory;
-
-				// Deserialized from JSON
-				private PrivacySettings() { }
-
-				[SuppressMessage("ReSharper", "UnusedMember.Global")]
-				internal enum EPrivacySetting : byte {
-					Unknown,
-					Private,
-					FriendsOnly,
-					Public
-				}
-			}
+			protected NumberResponse() { }
 		}
 
 		[SuppressMessage("ReSharper", "ClassCannotBeInstantiated")]
@@ -626,6 +602,70 @@ namespace ArchiSteamFarm.Json {
 			internal sealed class ItemList {
 				[JsonProperty(PropertyName = "assets", Required = Required.Always)]
 				internal readonly HashSet<Asset> Assets = new HashSet<Asset>();
+			}
+		}
+
+		[SuppressMessage("ReSharper", "ClassCannotBeInstantiated")]
+		internal sealed class UserPrivacy {
+			[JsonProperty(PropertyName = "eCommentPermission", Required = Required.Always)]
+			internal readonly ECommentPermission CommentPermission;
+
+			[JsonProperty(PropertyName = "PrivacySettings", Required = Required.Always)]
+			internal readonly PrivacySettings Settings;
+
+			// Constructed from privacy change request
+			internal UserPrivacy(PrivacySettings settings, ECommentPermission commentPermission) {
+				Settings = settings ?? throw new ArgumentNullException(nameof(settings));
+				CommentPermission = commentPermission;
+			}
+
+			// Deserialized from JSON
+			private UserPrivacy() { }
+
+			internal sealed class PrivacySettings {
+				[JsonProperty(PropertyName = "PrivacyInventory", Required = Required.Always)]
+				internal readonly EPrivacySetting Inventory;
+
+				[JsonProperty(PropertyName = "PrivacyInventoryGifts", Required = Required.Always)]
+				internal readonly EPrivacySetting InventoryGifts;
+
+				[JsonProperty(PropertyName = "PrivacyOwnedGames", Required = Required.Always)]
+				internal readonly EPrivacySetting OwnedGames;
+
+				[JsonProperty(PropertyName = "PrivacyPlaytime", Required = Required.Always)]
+				internal readonly EPrivacySetting Playtime;
+
+				[JsonProperty(PropertyName = "PrivacyProfile", Required = Required.Always)]
+				internal readonly EPrivacySetting Profile;
+
+				// Constructed from privacy change request
+				internal PrivacySettings(EPrivacySetting profile, EPrivacySetting ownedGames, EPrivacySetting playtime, EPrivacySetting inventory, EPrivacySetting inventoryGifts) {
+					if ((profile == EPrivacySetting.Unknown) || (ownedGames == EPrivacySetting.Unknown) || (playtime == EPrivacySetting.Unknown) || (inventory == EPrivacySetting.Unknown) || (inventoryGifts == EPrivacySetting.Unknown)) {
+						throw new ArgumentNullException(nameof(profile) + " || " + nameof(ownedGames) + " || " + nameof(playtime) + " || " + nameof(inventory) + " || " + nameof(inventoryGifts));
+					}
+
+					Profile = profile;
+					OwnedGames = ownedGames;
+					Playtime = playtime;
+					Inventory = inventory;
+					InventoryGifts = inventoryGifts;
+				}
+
+				// Deserialized from JSON
+				private PrivacySettings() { }
+
+				internal enum EPrivacySetting : byte {
+					Unknown,
+					Private,
+					FriendsOnly,
+					Public
+				}
+			}
+
+			internal enum ECommentPermission : byte {
+				FriendsOnly,
+				Public,
+				Private
 			}
 		}
 	}

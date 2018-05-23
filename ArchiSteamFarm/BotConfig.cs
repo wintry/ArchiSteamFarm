@@ -41,6 +41,9 @@ namespace ArchiSteamFarm {
 		[JsonProperty(Required = Required.DisallowNull)]
 		internal readonly bool AutoSteamSaleEvent;
 
+		[JsonProperty(Required = Required.DisallowNull)]
+		internal readonly EBotBehaviour BotBehaviour = EBotBehaviour.None;
+
 		[JsonProperty]
 		internal readonly string CustomGamePlayedWhileFarming;
 
@@ -114,9 +117,6 @@ namespace ArchiSteamFarm {
 		[JsonProperty(Required = Required.DisallowNull)]
 		internal readonly bool UseLoginKeys = true;
 
-		[JsonProperty(Required = Required.DisallowNull)]
-		internal EBotBehaviour BotBehaviour { get; private set; } = EBotBehaviour.None;
-
 		[JsonProperty]
 		internal string SteamLogin { get; set; }
 
@@ -130,20 +130,6 @@ namespace ArchiSteamFarm {
 		internal string SteamPassword { get; set; }
 
 		private bool ShouldSerializeSensitiveDetails = true;
-
-		[JsonProperty(Required = Required.DisallowNull)]
-		private bool IsBotAccount {
-			set {
-				// TODO: Deprecate further in the next version
-				ASF.ArchiLogger.LogGenericWarning(string.Format(Strings.WarningDeprecated, nameof(IsBotAccount), nameof(BotBehaviour)));
-
-				if (value) {
-					BotBehaviour |= EBotBehaviour.RejectInvalidFriendInvites;
-					BotBehaviour |= EBotBehaviour.RejectInvalidTrades;
-					BotBehaviour |= EBotBehaviour.RejectInvalidGroupInvites;
-				}
-			}
-		}
 
 		[JsonProperty(PropertyName = SharedInfo.UlongCompatibilityStringPrefix + nameof(SteamMasterClanID), Required = Required.DisallowNull)]
 		private string SSteamMasterClanID {
@@ -162,7 +148,7 @@ namespace ArchiSteamFarm {
 		public bool ShouldSerializeSteamParentalPIN() => ShouldSerializeSensitiveDetails;
 		public bool ShouldSerializeSteamPassword() => ShouldSerializeSensitiveDetails;
 
-		internal static BotConfig Load(string filePath) {
+		internal static async Task<BotConfig> Load(string filePath) {
 			if (string.IsNullOrEmpty(filePath)) {
 				ASF.ArchiLogger.LogNullError(nameof(filePath));
 				return null;
@@ -175,7 +161,7 @@ namespace ArchiSteamFarm {
 			BotConfig botConfig;
 
 			try {
-				botConfig = JsonConvert.DeserializeObject<BotConfig>(File.ReadAllText(filePath));
+				botConfig = JsonConvert.DeserializeObject<BotConfig>(await File.ReadAllTextAsync(filePath).ConfigureAwait(false));
 			} catch (Exception e) {
 				ASF.ArchiLogger.LogGenericException(e);
 				return null;

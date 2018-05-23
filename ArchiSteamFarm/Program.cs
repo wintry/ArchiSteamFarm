@@ -241,7 +241,7 @@ namespace ArchiSteamFarm {
 		private static async Task InitGlobalConfigAndLanguage() {
 			string globalConfigFile = Path.Combine(SharedInfo.ConfigDirectory, SharedInfo.GlobalConfigFileName);
 
-			GlobalConfig = GlobalConfig.Load(globalConfigFile);
+			GlobalConfig = await GlobalConfig.Load(globalConfigFile).ConfigureAwait(false);
 			if (GlobalConfig == null) {
 				ASF.ArchiLogger.LogGenericError(string.Format(Strings.ErrorGlobalConfigNotLoaded, globalConfigFile));
 				await Task.Delay(5 * 1000).ConfigureAwait(false);
@@ -250,7 +250,7 @@ namespace ArchiSteamFarm {
 			}
 
 			if (Debugging.IsUserDebugging) {
-				ASF.ArchiLogger.LogGenericDebug(nameof(GlobalConfig) + ": " + JsonConvert.SerializeObject(GlobalConfig, Formatting.Indented));
+				ASF.ArchiLogger.LogGenericDebug(SharedInfo.GlobalConfigFileName + ": " + JsonConvert.SerializeObject(GlobalConfig, Formatting.Indented));
 			}
 
 			if (GlobalConfig.BackgroundGCPeriod > 0) {
@@ -318,12 +318,16 @@ namespace ArchiSteamFarm {
 				await Task.Delay(5 * 1000).ConfigureAwait(false);
 			}
 
-			GlobalDatabase = GlobalDatabase.Load(globalDatabaseFile);
+			GlobalDatabase = await GlobalDatabase.Load(globalDatabaseFile).ConfigureAwait(false);
 			if (GlobalDatabase == null) {
 				ASF.ArchiLogger.LogGenericError(string.Format(Strings.ErrorDatabaseInvalid, globalDatabaseFile));
 				await Task.Delay(5 * 1000).ConfigureAwait(false);
 				await Exit(1).ConfigureAwait(false);
 				return;
+			}
+
+			if (Debugging.IsUserDebugging) {
+				ASF.ArchiLogger.LogGenericDebug(SharedInfo.GlobalDatabaseFileName + ": " + JsonConvert.SerializeObject(GlobalDatabase, Formatting.Indented));
 			}
 
 			// If debugging is on, we prepare debug directory prior to running
@@ -444,24 +448,6 @@ namespace ArchiSteamFarm {
 						break;
 					case "--process-required" when !cryptKeyNext:
 						ProcessRequired = true;
-						break;
-					case "--server" when !cryptKeyNext:
-						// TODO: Deprecate further in the next version
-						ASF.ArchiLogger.LogGenericWarning(string.Format(Strings.WarningDeprecated, "--server", "GlobalConfig.IPC"));
-
-						ProcessRequired = true;
-
-						if (GlobalConfig.IPCPrefixes.Count > 0) {
-							IPC.Start(GlobalConfig.IPCPrefixes);
-						}
-
-						break;
-					case "--service" when !cryptKeyNext:
-						// TODO: Deprecate further in the next version
-						ASF.ArchiLogger.LogGenericWarning(string.Format(Strings.WarningDeprecated, "--service", "--no-restart --process-required --system-required"));
-						RestartAllowed = false;
-						ProcessRequired = true;
-						SystemRequired = true;
 						break;
 					case "--system-required" when !cryptKeyNext:
 						SystemRequired = true;
